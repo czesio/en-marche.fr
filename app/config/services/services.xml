@@ -54,6 +54,7 @@
         <!-- Form -->
         <service id="AppBundle\Form\CitizenProjectCommentCommandType"/>
         <service id="AppBundle\Form\CitizenProjectCommandType"/>
+		<service id="AppBundle\Form\EventRegistrationType"/>
 
 		<!-- Procuration -->
 		<service id="AppBundle\Procuration\ProcurationManager" public="true" />

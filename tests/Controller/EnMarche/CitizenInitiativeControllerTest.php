@@ -288,7 +288,7 @@ class CitizenInitiativeControllerTest extends MysqlWebTestCase
 
         $this->assertResponseStatusCode(Response::HTTP_OK, $this->client->getResponse());
         $this->assertEmpty($crawler->filter('#field-first-name > input[type="text"]')->attr('value'));
-        $this->assertEmpty($crawler->filter('#field-postal-code > input[type="text"]')->attr('value'));
+        $this->assertEmpty($crawler->filter('#field-last-name > input[type="text"]')->attr('value'));
         $this->assertEmpty($crawler->filter('#field-email-address > input[type="email"]')->attr('value'));
 
         $crawler = $this->client->submit($crawler->selectButton("Je m'inscris")->form());
@@ -296,15 +296,16 @@ class CitizenInitiativeControllerTest extends MysqlWebTestCase
         $this->assertResponseStatusCode(Response::HTTP_OK, $this->client->getResponse());
         $this->assertSame(3, $crawler->filter('.form__errors')->count());
         $this->assertSame('Cette valeur ne doit pas être vide.', $crawler->filter('#field-first-name .form__errors > li')->text());
-        $this->assertSame('Cette valeur ne doit pas être vide.', $crawler->filter('#field-postal-code .form__errors > li')->text());
+        $this->assertSame('Cette valeur ne doit pas être vide.', $crawler->filter('#field-last-name .form__errors > li')->text());
         $this->assertSame('Cette valeur ne doit pas être vide.', $crawler->filter('#field-email-address .form__errors > li')->text());
 
         $this->client->submit($crawler->selectButton("Je m'inscris")->form([
             'event_registration' => [
                 'firstName' => 'Pauline',
                 'emailAddress' => 'paupau75@example.org',
-                'postalCode' => '75001',
+                'lastName' => '75001',
                 'newsletterSubscriber' => true,
+                'acceptTerms' => true,
             ],
         ]));
 
@@ -337,7 +338,7 @@ class CitizenInitiativeControllerTest extends MysqlWebTestCase
 
         $this->assertResponseStatusCode(Response::HTTP_OK, $this->client->getResponse());
         $this->assertSame('Benjamin', $crawler->filter('#field-first-name > input[type="text"]')->attr('value'));
-        $this->assertSame('13003', $crawler->filter('#field-postal-code > input[type="text"]')->attr('value'));
+        $this->assertSame('Duroc', $crawler->filter('#field-last-name > input[type="text"]')->attr('value'));
         $this->assertSame('benjyd@aol.com', $crawler->filter('#field-email-address > input[type="email"]')->attr('value'));
 
         $this->client->submit($crawler->selectButton("Je m'inscris")->form());
@@ -379,7 +380,7 @@ class CitizenInitiativeControllerTest extends MysqlWebTestCase
         $this->assertResponseStatusCode(Response::HTTP_OK, $this->client->getResponse());
 
         $this->assertSame('Benjamin', $crawler->filter('#field-first-name > input[type="text"]')->attr('value'));
-        $this->assertSame('13003', $crawler->filter('#field-postal-code > input[type="text"]')->attr('value'));
+        $this->assertSame('Duroc', $crawler->filter('#field-last-name > input[type="text"]')->attr('value'));
         $this->assertSame('benjyd@aol.com', $crawler->filter('#field-email-address > input[type="email"]')->attr('value'));
 
         $crawler = $this->client->submit($crawler->selectButton("Je m'inscris")->form());
