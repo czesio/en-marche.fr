@@ -29,6 +29,9 @@
 				<argument type="service" id="app.glide" />
 			</call>
 		</service>
+		<service id="AppBundle\CitizenProject\CitizenProjectBroadcast" public="true">
+			<argument key="$mailer" type="service" id="app.mailer.campaign" />
+		</service>
 
 		<!-- Controller -->
 		<prototype namespace="AppBundle\Controller\" resource="../../../src/Controller/">
