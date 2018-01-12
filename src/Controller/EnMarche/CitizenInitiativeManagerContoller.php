@@ -3,6 +3,7 @@
 namespace AppBundle\Controller\EnMarche;
 
 use AppBundle\CitizenInitiative\CitizenInitiativeCommand;
+use AppBundle\Controller\PrintControllerTrait;
 use AppBundle\Entity\CitizenInitiative;
 use AppBundle\Entity\EventRegistration;
 use AppBundle\Event\EventContactMembersCommand;
@@ -10,6 +11,7 @@ use AppBundle\Exception\BadUuidRequestException;
 use AppBundle\Exception\InvalidUuidException;
 use AppBundle\Form\CitizenInitiativeType;
 use AppBundle\Form\ContactMembersType;
+use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Entity;
@@ -27,6 +29,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class CitizenInitiativeManagerContoller extends Controller
 {
+    use PrintControllerTrait;
+
     /**
      * @Route("/modifier", name="app_citizen_initiative_edit")
      * @Method("GET|POST")
@@ -183,5 +187,44 @@ class CitizenInitiativeManagerContoller extends Controller
             'contacts' => $uuids,
             'form' => $form->createView(),
         ]);
+    }
+
+    /**
+     * @Route("/inscrits/imprimer", name="app_citizen_initiative_print_members")
+     * @Method("POST")
+     */
+    public function printMembersAction(Request $request, CitizenInitiative $initiative): Response
+    {
+        if (!$this->isCsrfTokenValid('event.print_members', $request->request->get('token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF protection token to print members.');
+        }
+
+        $uuids = json_decode($request->request->get('prints'), true);
+
+        if (!$uuids) {
+            return $this->redirectToRoute('app_event_members', [
+                'slug' => $initiative->getSlug(),
+            ]);
+        }
+
+        $repository = $this->getDoctrine()->getRepository(EventRegistration::class);
+
+        try {
+            $registrations = $repository->findByUuidAndEvent($initiative, $uuids);
+        } catch (InvalidUuidException $e) {
+            throw new BadUuidRequestException($e);
+        }
+
+        if (!$registrations) {
+            return $this->redirectToRoute('app_event_members', [
+                'slug' => $initiative->getSlug(),
+            ]);
+        }
+
+        $html = $this->renderView('events/print_members.html.twig', [
+            'registrations' => $registrations,
+        ]);
+
+        return new PdfResponse($this->getPdfForResponse($html), 'Liste des participants.pdf');
     }
 }

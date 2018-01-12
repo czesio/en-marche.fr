@@ -36,6 +36,7 @@ class AppKernel extends Kernel
 
             // KnpLabs
             new Knp\Bundle\MenuBundle\KnpMenuBundle(),
+            new Knp\Bundle\SnappyBundle\KnpSnappyBundle(),
             new Knp\Bundle\TimeBundle\KnpTimeBundle(),
 
             new AppBundle\AppBundle(),
