@@ -513,7 +513,7 @@ $text--size-extra-large: 48px;
             font-size: $text--size-default;
             letter-spacing: 0;
 
-            h1 {
+            .text--logo {
                 @include text--logo;
             }
 
