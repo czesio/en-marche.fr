@@ -129,7 +129,7 @@ class CitizenProjectRepository extends BaseGroupRepository
      *
      * @return CitizenProject[]
      */
-    public function findNearByCitizenProjectSummariesForAdherent(
+    public function findNearByCitizenProjectsForAdherent(
         Adherent $adherent, int $limit, ?string $approvedSince
     ): array {
         $qb = $this
@@ -196,5 +196,10 @@ class CitizenProjectRepository extends BaseGroupRepository
             ->getQuery()
             ->getResult()
         ;
+    }
+
+    public function clear(): void
+    {
+        $this->_em->clear(CitizenProject::class);
     }
 }

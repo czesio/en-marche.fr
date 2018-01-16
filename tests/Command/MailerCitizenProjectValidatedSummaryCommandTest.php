@@ -22,7 +22,7 @@ class MailerCitizenProjectValidatedSummaryCommandTest extends MysqlWebTestCase
     {
         $this->runCommand(
             MailerCitizenProjectValidatedSummaryCommand::COMMAND_NAME,
-            ['--approvedSince' => $approvedSince, '--offset' => $offset]
+            ['--approved_since' => $approvedSince, '--offset' => $offset]
         );
 
         $this->assertCountMails($sentEmails, CitizenProjectApprovedSummaryMessage::class);

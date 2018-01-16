@@ -1019,4 +1019,9 @@ class Adherent implements UserInterface, GeoPointInterface, EncoderAwareInterfac
             return $area->getCodesAsString();
         }, $this->coordinatorManagedAreas->toArray()));
     }
+
+    public function isEligibleToCitizenProjectBroadcast(): bool
+    {
+        return null !== $this->getLatitude() && null !== $this->getLongitude();
+    }
 }

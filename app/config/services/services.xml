@@ -29,7 +29,7 @@
 				<argument type="service" id="app.glide" />
 			</call>
 		</service>
-		<service id="AppBundle\CitizenProject\CitizenProjectBroadcast" public="true">
+		<service id="AppBundle\CitizenProject\CitizenProjectBroadcaster" public="true">
 			<argument key="$mailer" type="service" id="app.mailer.campaign" />
 		</service>
 

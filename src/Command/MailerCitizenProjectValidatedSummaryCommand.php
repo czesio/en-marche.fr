@@ -2,7 +2,7 @@
 
 namespace AppBundle\Command;
 
-use AppBundle\CitizenProject\CitizenProjectBroadcast;
+use AppBundle\CitizenProject\CitizenProjectBroadcaster;
 use AppBundle\Entity\Adherent;
 use AppBundle\Entity\CitizenProject;
 use AppBundle\Repository\AdherentRepository;
@@ -19,7 +19,6 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
     public const COMMAND_NAME = 'app:mailer:citizen-project-summary';
     private const DEFAULT_APPROVED_SINCE = '7 days';
     private const DEFAULT_OFFSET = 0;
-    private const CITIZEN_PROJECTS_SUMMARY_LIMIT = 15;
 
     /** @var EntityManager */
     private $entityManager;
@@ -27,8 +26,8 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
     /** @var Logger */
     private $logger;
 
-    /** @var CitizenProjectBroadcast */
-    private $broadcast;
+    /** @var CitizenProjectBroadcaster */
+    private $broadcaster;
 
     /** @var AdherentRepository */
     private $adherentRepository;
@@ -41,13 +40,13 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
         $this
           ->setName(self::COMMAND_NAME)
           ->addOption(
-              'approvedSince',
-              'as',
+              'approved_since',
+              null,
               InputOption::VALUE_OPTIONAL,
               'Duration in format Time since the citizen projects has been approved.',
               self::DEFAULT_APPROVED_SINCE
           )
-          ->addOption('offset', 'of', InputOption::VALUE_OPTIONAL, 'Offset to start the query.', self::DEFAULT_OFFSET)
+          ->addOption('offset', null, InputOption::VALUE_OPTIONAL, 'Offset to start the query.', self::DEFAULT_OFFSET)
           ->setDescription('Sending a summary email of validated citizen projects to adherents.');
     }
 
@@ -57,7 +56,7 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
 
         $this->entityManager = $container->get('doctrine.orm.entity_manager');
         $this->logger = $container->get('logger');
-        $this->broadcast = $container->get(CitizenProjectBroadcast::class);
+        $this->broadcaster = $container->get(CitizenProjectBroadcaster::class);
 
         $this->adherentRepository = $this->entityManager->getRepository(Adherent::class);
         $this->citizenProjectRepository = $this->entityManager->getRepository(CitizenProject::class);
@@ -68,42 +67,30 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
         $adherents = $this->adherentRepository->findAdherentsByCitizenProjectCreationEmailSubscription(
             $input->getOption('offset')
         );
-
         $adherentCount = 0;
-        $emailCount = 0;
 
-        foreach ($adherents as $chunk) {
-            ++$adherentCount;
+        try {
+            foreach ($adherents as $chunk) {
+                /** @var Adherent $adherent */
+                $adherent = $chunk[0];
 
-            /** @var Adherent $adherent */
-            $adherent = $chunk[0];
+                if (!$adherent->isEligibleToCitizenProjectBroadcast()) {
+                    continue;
+                }
+
+                // Broadcast the citizen projects
+                $this->broadcaster->broadcast($adherent, $input->getOption('approved_since'));
+                ++$adherentCount;
+            }
+        } catch (\Exception $e) {
             $this->logger->info(
                 sprintf(
-                    '[Broadcasting citizen projects] Treating adherent... (id #%d) (offset: %d)',
-                    $adherent->getId(),
+                    '[Broadcasting citizen projects] [Error] Treating adherent... (offset: %d)',
                     $adherentCount
                 )
             );
-
-            // Finds all citizen projects near the Adherent
-            $citizenProjects = $this->citizenProjectRepository->findNearByCitizenProjectSummariesForAdherent(
-                $adherent,
-                self::CITIZEN_PROJECTS_SUMMARY_LIMIT,
-                $input->getOption('approvedSince')
-            );
-
-            if (0 === count($citizenProjects)) {
-                continue;
-            }
-
-            // Broadcast the citizen projects
-            $this->broadcast->handle($citizenProjects, $adherent);
-
-            $this->entityManager->clear(CitizenProject::class);
-            ++$emailCount;
         }
 
-        $this->logger->info(sprintf('[Broadcasting citizen projects] Total emails queued : %d', $emailCount));
         $this->logger->info(sprintf('[Broadcasting citizen projects] Total adherents treated : %d', $adherentCount));
     }
 }
