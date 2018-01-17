@@ -11,7 +11,6 @@ use AppBundle\Exception\BadUuidRequestException;
 use AppBundle\Exception\InvalidUuidException;
 use AppBundle\Form\CitizenInitiativeType;
 use AppBundle\Form\ContactMembersType;
-use Knp\Bundle\SnappyBundle\Snappy\Response\PdfResponse;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Entity;
@@ -221,10 +220,12 @@ class CitizenInitiativeManagerContoller extends Controller
             ]);
         }
 
-        $html = $this->renderView('events/print_members.html.twig', [
-            'registrations' => $registrations,
-        ]);
-
-        return new PdfResponse($this->getPdfForResponse($html), 'Liste des participants.pdf');
+        return $this->getPdfResponse(
+            'events/print_members.html.twig',
+            [
+                'registrations' => $registrations,
+            ],
+            'Liste des participants.pdf'
+        );
     }
 }
