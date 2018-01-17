@@ -174,7 +174,7 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
         $crawler = $this->client->request('GET', '/initiative-citoyenne/'.date('Y-m-d', strtotime('+11 days')).'-nettoyage-de-la-kilchberg');
         $crawler = $this->client->click($crawler->selectLink('Gérer les participants')->link());
 
-        $this->assertTrue($this->seeMembersList($crawler, 2));
+        $this->assertTrue($this->seeMembersList($crawler, 1));
     }
 
     public function testOrganizerCanExportRegistrationsWithWrongUuids()
@@ -310,7 +310,6 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
 
     private function seeMembersList(Crawler $crawler, int $count): bool
     {
-        // Header row is part of the count
         return $count === count($crawler->filter('table > tr'));
     }
 
