@@ -63,23 +63,22 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $adherents = $this->adherentRepository->findAdherentsByCitizenProjectCreationEmailSubscription(
+        $uuids = $this->adherentRepository->findAdherentsUuidByCitizenProjectCreationEmailSubscription(
             $input->getOption('offset')
         );
+        $approvedSince = $input->getOption('approved_since');
         $adherentCount = 0;
 
-        foreach ($adherents as $chunk) {
-            /** @var Adherent $adherent */
-            $adherent = $chunk[0];
-
-            if (!$adherent->isEligibleToCitizenProjectBroadcast()) {
-                continue;
+        try {
+            foreach ($uuids as $uuid) {
+                $this->producer->scheduleBroadcast($uuid, $approvedSince);
+                ++$adherentCount;
             }
-
-            $this->producer->scheduleBroadcast($adherent, $input->getOption('approved_since'));
-
-            $this->adherentRepository->clear();
-            ++$adherentCount;
+        } catch (\Exception $e) {
+            $this->logger->error(
+                sprintf('[Broadcasting citizen projects] Command failed (offset: %d)', $adherentCount),
+                ['exception' => $e]
+            );
         }
 
         $this->logger->info(sprintf('[Broadcasting citizen projects] Total adherents treated : %d', $adherentCount));
