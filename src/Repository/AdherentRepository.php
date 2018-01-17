@@ -17,6 +17,7 @@ use AppBundle\Geocoder\Coordinates;
 use AppBundle\Membership\AdherentEmailSubscription;
 use AppBundle\Referent\ManagedAreaUtils;
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Internal\Hydration\IterableResult;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Ramsey\Uuid\Uuid;
@@ -545,5 +546,30 @@ class AdherentRepository extends EntityRepository implements UserLoaderInterface
         return array_map(function (UuidInterface $uuid) {
             return $uuid->toString();
         }, array_column($query->getArrayResult(), 'uuid'));
+    }
+
+    public function findAdherentsByCitizenProjectCreationEmailSubscription(?int $offset = 0): IterableResult
+    {
+        $qb = $this
+            ->createQueryBuilder('a')
+            ->andWhere('a.status = :status')
+            ->setParameter('status', Adherent::ENABLED)
+            ->andWhere('a.citizenProjectCreationEmailSubscriptionRadius != :radius')
+            ->setParameter('radius', Adherent::DISABLED_CITIZEN_PROJECT_EMAIL)
+        ;
+
+        if (null !== $offset) {
+            $qb->setFirstResult($offset);
+        }
+
+        return $qb
+            ->getQuery()
+            ->iterate()
+        ;
+    }
+
+    public function clear(): void
+    {
+        $this->_em->clear($this->_entityName);
     }
 }
