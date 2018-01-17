@@ -47,6 +47,7 @@ RUN apt-get update -q && \
         redis-server \
         supervisor \
         tzdata \
+        libxrender1 \
         wget && \
 
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \

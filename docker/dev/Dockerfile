@@ -51,6 +51,7 @@ RUN apt-get update -q && \
         php-uuid \
         supervisor \
         tzdata \
+        libxrender1 \
         wget && \
 
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
