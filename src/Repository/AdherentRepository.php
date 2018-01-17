@@ -562,10 +562,14 @@ class AdherentRepository extends EntityRepository implements UserLoaderInterface
             $qb->setFirstResult($offset);
         }
 
-        return
-            $qb
+        return $qb
             ->getQuery()
             ->iterate()
         ;
+    }
+
+    public function clear(): void
+    {
+        $this->_em->clear($this->_entityName);
     }
 }

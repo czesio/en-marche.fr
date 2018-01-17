@@ -200,6 +200,6 @@ class CitizenProjectRepository extends BaseGroupRepository
 
     public function clear(): void
     {
-        $this->_em->clear(CitizenProject::class);
+        $this->_em->clear($this->_entityName);
     }
 }

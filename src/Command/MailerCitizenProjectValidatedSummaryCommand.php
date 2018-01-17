@@ -2,11 +2,9 @@
 
 namespace AppBundle\Command;
 
-use AppBundle\CitizenProject\CitizenProjectBroadcaster;
 use AppBundle\Entity\Adherent;
-use AppBundle\Entity\CitizenProject;
+use AppBundle\Producer\CitizenProjectSummaryProducer;
 use AppBundle\Repository\AdherentRepository;
-use AppBundle\Repository\CitizenProjectRepository;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bridge\Monolog\Logger;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -23,31 +21,33 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
     /** @var EntityManager */
     private $entityManager;
 
-    /** @var Logger */
-    private $logger;
-
-    /** @var CitizenProjectBroadcaster */
-    private $broadcaster;
-
     /** @var AdherentRepository */
     private $adherentRepository;
 
-    /** @var CitizenProjectRepository */
-    private $citizenProjectRepository;
+    /** @var Logger */
+    private $logger;
+
+    /** @var CitizenProjectSummaryProducer */
+    private $producer;
 
     protected function configure()
     {
         $this
-          ->setName(self::COMMAND_NAME)
-          ->addOption(
-              'approved_since',
-              null,
-              InputOption::VALUE_OPTIONAL,
-              'Duration in format Time since the citizen projects has been approved.',
-              self::DEFAULT_APPROVED_SINCE
-          )
-          ->addOption('offset', null, InputOption::VALUE_OPTIONAL, 'Offset to start the query.', self::DEFAULT_OFFSET)
-          ->setDescription('Sending a summary email of validated citizen projects to adherents.');
+            ->setName(self::COMMAND_NAME)
+            ->addOption(
+                'approved_since',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Duration in format Time since the citizen projects has been approved.',
+                self::DEFAULT_APPROVED_SINCE
+            )
+            ->addOption(
+                'offset',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Offset to start the query.',
+                self::DEFAULT_OFFSET)
+            ->setDescription('Sending a summary email of validated citizen projects to adherents.');
     }
 
     protected function initialize(InputInterface $input, OutputInterface $output)
@@ -55,11 +55,10 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
         $container = $this->getContainer();
 
         $this->entityManager = $container->get('doctrine.orm.entity_manager');
-        $this->logger = $container->get('logger');
-        $this->broadcaster = $container->get(CitizenProjectBroadcaster::class);
-
         $this->adherentRepository = $this->entityManager->getRepository(Adherent::class);
-        $this->citizenProjectRepository = $this->entityManager->getRepository(CitizenProject::class);
+
+        $this->logger = $container->get('logger');
+        $this->producer = $container->get('old_sound_rabbit_mq.citizen_project_summary_producer');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -69,26 +68,18 @@ class MailerCitizenProjectValidatedSummaryCommand extends ContainerAwareCommand
         );
         $adherentCount = 0;
 
-        try {
-            foreach ($adherents as $chunk) {
-                /** @var Adherent $adherent */
-                $adherent = $chunk[0];
+        foreach ($adherents as $chunk) {
+            /** @var Adherent $adherent */
+            $adherent = $chunk[0];
 
-                if (!$adherent->isEligibleToCitizenProjectBroadcast()) {
-                    continue;
-                }
-
-                // Broadcast the citizen projects
-                $this->broadcaster->broadcast($adherent, $input->getOption('approved_since'));
-                ++$adherentCount;
+            if (!$adherent->isEligibleToCitizenProjectBroadcast()) {
+                continue;
             }
-        } catch (\Exception $e) {
-            $this->logger->info(
-                sprintf(
-                    '[Broadcasting citizen projects] [Error] Treating adherent... (offset: %d)',
-                    $adherentCount
-                )
-            );
+
+            $this->producer->scheduleBroadcast($adherent, $input->getOption('approved_since'));
+
+            $this->adherentRepository->clear();
+            ++$adherentCount;
         }
 
         $this->logger->info(sprintf('[Broadcasting citizen projects] Total adherents treated : %d', $adherentCount));
