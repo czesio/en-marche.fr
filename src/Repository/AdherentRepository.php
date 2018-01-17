@@ -17,7 +17,6 @@ use AppBundle\Geocoder\Coordinates;
 use AppBundle\Membership\AdherentEmailSubscription;
 use AppBundle\Referent\ManagedAreaUtils;
 use Doctrine\ORM\EntityRepository;
-use Doctrine\ORM\Internal\Hydration\IterableResult;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Ramsey\Uuid\Uuid;
@@ -548,28 +547,28 @@ class AdherentRepository extends EntityRepository implements UserLoaderInterface
         }, array_column($query->getArrayResult(), 'uuid'));
     }
 
-    public function findAdherentsByCitizenProjectCreationEmailSubscription(?int $offset = 0): IterableResult
+    public function findAdherentsUuidByCitizenProjectCreationEmailSubscription(?int $offset = 0): array
     {
-        $qb = $this
-            ->createQueryBuilder('a')
-            ->andWhere('a.status = :status')
+        $qb = $this->createQueryBuilder('a');
+
+        $qb
+            ->select('a.uuid')
+            ->where('a.status = :status')
             ->setParameter('status', Adherent::ENABLED)
             ->andWhere('a.citizenProjectCreationEmailSubscriptionRadius != :radius')
             ->setParameter('radius', Adherent::DISABLED_CITIZEN_PROJECT_EMAIL)
+            ->andWhere('a.postAddress.latitude IS NOT NULL')
+            ->andWhere('a.postAddress.longitude IS NOT NULL')
         ;
 
         if (null !== $offset) {
             $qb->setFirstResult($offset);
         }
 
-        return $qb
-            ->getQuery()
-            ->iterate()
-        ;
-    }
+        $query = $qb->getQuery();
 
-    public function clear(): void
-    {
-        $this->_em->clear($this->_entityName);
+        return array_map(function (UuidInterface $uuid) {
+            return $uuid->toString();
+        }, array_column($query->getArrayResult(), 'uuid'));
     }
 }
