@@ -6,8 +6,9 @@ use AppBundle\Committee\CommitteeManager;
 use AppBundle\Committee\CommitteePermissions;
 use AppBundle\Entity\Adherent;
 use AppBundle\Entity\Committee;
+use AppBundle\Security\Voter\AbstractAdherentVoter;
 
-class HostCommitteeVoter extends AbstractCommitteeVoter
+class HostCommitteeVoter extends AbstractAdherentVoter
 {
     private $manager;
 
@@ -21,11 +22,19 @@ class HostCommitteeVoter extends AbstractCommitteeVoter
         return CommitteePermissions::HOST === $attribute && $committee instanceof Committee;
     }
 
-    protected function doVoteOnAttribute(string $attribute, Adherent $adherent, Committee $committee): bool
+    /**
+     * @param string    $attribute
+     * @param Adherent  $adherent
+     * @param Committee $committee
+     *
+     * @return bool
+     */
+    protected function doVoteOnAttribute(string $attribute, Adherent $adherent, $committee): bool
     {
         if (!$committee->isApproved()) {
             return $this->manager->superviseCommittee($adherent, $committee)
-                || $adherent->getUuid()->toString() === $committee->getCreatedBy();
+                || $committee->isCreatedBy($adherent->getUuid())
+            ;
         }
 
         return $this->manager->hostCommittee($adherent, $committee);

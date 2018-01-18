@@ -3,9 +3,11 @@
 namespace AppBundle\Controller\EnMarche;
 
 use AppBundle\CitizenAction\CitizenActionManager;
+use AppBundle\CitizenAction\CitizenActionPermissions;
 use AppBundle\CitizenAction\CitizenActionRegistrationCommandHandler;
 use AppBundle\Controller\EntityControllerTrait;
 use AppBundle\Entity\CitizenAction;
+use AppBundle\Event\AnonymousRegistrationSession;
 use AppBundle\Event\EventRegistrationCommand;
 use AppBundle\Exception\BadUuidRequestException;
 use AppBundle\Exception\InvalidUuidException;
@@ -44,7 +46,6 @@ class CitizenActionController extends Controller
     /**
      * @Route("/{slug}/inscription", name="app_citizen_action_attend")
      * @Method("GET|POST")
-     * @Security("is_granted('REGISTER_CITIZEN_ACTION', citizenAction)")
      */
     public function attendAction(Request $request, CitizenAction $citizenAction): Response
     {
@@ -56,9 +57,16 @@ class CitizenActionController extends Controller
             throw $this->createNotFoundException(sprintf('Event "%s" is cancelled and does not accept registrations anymore', $citizenAction->getUuid()));
         }
 
+        if ($this->isGranted('IS_AUTHENTICATED_ANONYMOUSLY', $citizenAction)) {
+            if ($authenticate = $this->get(AnonymousRegistrationSession::class)->start($request)) {
+                return $authenticate;
+            }
+        }
+
         $command = new EventRegistrationCommand($citizenAction, $this->getUser());
-        $form = $this->createForm(EventRegistrationType::class, $command);
-        $form->handleRequest($request);
+        $form = $this->createForm(EventRegistrationType::class, $command)
+            ->handleRequest($request)
+        ;
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->get(CitizenActionRegistrationCommandHandler::class)->handle($command);
@@ -79,7 +87,6 @@ class CitizenActionController extends Controller
     /**
      * @Route("/{slug}/desinscription", name="app_citizen_action_unregistration")
      * @Method("GET|POST")
-     * @Security("is_granted('UNREGISTER_CITIZEN_ACTION', citizenAction)")
      */
     public function unregistrationAction(Request $request, CitizenAction $citizenAction): Response
     {

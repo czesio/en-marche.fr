@@ -16,6 +16,7 @@ use AppBundle\Entity\Unregistration;
 use AppBundle\Event\EventManager;
 use AppBundle\Event\EventRegistrationManager;
 use AppBundle\Report\ReportManager;
+use AppBundle\Repository\EventRegistrationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class AdherentRegistry
@@ -29,7 +30,7 @@ class AdherentRegistry
     private $activitySubscriptionManager;
     private $citizenProjectManager;
     private $reportManager;
-    private $registrationManager;
+    private $registrationRepository;
 
     public function __construct(
         EntityManagerInterface $em,
@@ -41,7 +42,7 @@ class AdherentRegistry
         ActivitySubscriptionManager $activitySubscriptionManager,
         CitizenProjectManager $citizenProjectManager,
         ReportManager $reportManager,
-        EventRegistrationManager $registrationManager
+        EventRegistrationRepository $registrationRepository
     ) {
         $this->em = $em;
         $this->citizenInitiativeManager = $citizenInitiativeManager;
@@ -52,7 +53,7 @@ class AdherentRegistry
         $this->activitySubscriptionManager = $activitySubscriptionManager;
         $this->citizenProjectManager = $citizenProjectManager;
         $this->reportManager = $reportManager;
-        $this->registrationManager = $registrationManager;
+        $this->registrationRepository = $registrationRepository;
     }
 
     public function unregister(Adherent $adherent, Unregistration $unregistration): void
@@ -67,7 +68,7 @@ class AdherentRegistry
         $this->citizenActionManager->removeOrganizerCitizenActions($adherent);
         $this->citizenInitiativeManager->removeOrganizerCitizenInitiatives($adherent);
         $this->eventManager->removeOrganizerEvents($adherent);
-        $this->registrationManager->anonymizeAdherentRegistrations($adherent);
+        $this->registrationRepository->anonymizeAdherentRegistrations($adherent);
         $this->committeeFeedManager->removeAuthorItems($adherent);
         $this->activitySubscriptionManager->removeAdherentActivities($adherent);
         $this->citizenProjectManager->removeAuthorItems($adherent);

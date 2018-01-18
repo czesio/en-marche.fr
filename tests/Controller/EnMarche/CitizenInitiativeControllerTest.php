@@ -18,17 +18,13 @@ use AppBundle\Mailer\Message\CommitteeCitizenInitiativeOrganizerNotificationMess
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\AppBundle\Controller\ControllerTestTrait;
-use Tests\AppBundle\MysqlWebTestCase;
 
 /**
  * @group functional
  * @group citizenInitiative
  */
-class CitizenInitiativeControllerTest extends MysqlWebTestCase
+class CitizenInitiativeControllerTest extends AbstractEventControllerTest
 {
-    use ControllerTestTrait;
-
     private $repository;
 
     public function testAnonymousUserCannotCreateCitizenInitiative()
@@ -593,5 +589,10 @@ class CitizenInitiativeControllerTest extends MysqlWebTestCase
         $this->repository = null;
 
         parent::tearDown();
+    }
+
+    protected function getEventUrl(): string
+    {
+        return '/initiative-citoyenne/'.date('Y-m-d', strtotime('tomorrow')).'-apprenez-a-sauver-des-vies';
     }
 }

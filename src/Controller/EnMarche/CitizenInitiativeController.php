@@ -7,6 +7,7 @@ use AppBundle\Committee\Feed\CommitteeCitizenInitiativeMessage;
 use AppBundle\Controller\EntityControllerTrait;
 use AppBundle\Entity\CitizenInitiative;
 use AppBundle\Entity\Skill;
+use AppBundle\Event\AnonymousRegistrationSession;
 use AppBundle\Event\EventInvitation;
 use AppBundle\Event\EventRegistrationCommand;
 use AppBundle\Exception\BadUuidRequestException;
@@ -177,9 +178,16 @@ class CitizenInitiativeController extends Controller
             throw $this->createNotFoundException(sprintf('Event "%s" is cancelled and does not accept registrations anymore', $initiative->getUuid()));
         }
 
-        $command = new EventRegistrationCommand($initiative, $this->getUser());
-        $form = $this->createForm(EventRegistrationType::class, $command);
-        $form->handleRequest($request);
+        $user = $this->getUser();
+
+        if (!$user && $authenticate = $this->get(AnonymousRegistrationSession::class)->start($request)) {
+            return $authenticate;
+        }
+
+        $command = new EventRegistrationCommand($initiative, $user);
+        $form = $this->createForm(EventRegistrationType::class, $command)
+            ->handleRequest($request)
+        ;
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->get('app.citizen_initiative.registration_handler')->handle($command);

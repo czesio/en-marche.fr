@@ -7,11 +7,13 @@ use AppBundle\Entity\Adherent;
 use AppBundle\Entity\CitizenProject;
 use AppBundle\Security\Voter\AbstractAdherentVoter;
 
-class AdministrateCitizenProjectVoter extends AbstractAdherentVoter
+class CommentsCitizenProjectVoter extends AbstractAdherentVoter
 {
-    protected function supports($attribute, $subject): bool
+    protected function supports($attribute, $citizenProject)
     {
-        return CitizenProjectPermissions::ADMINISTRATE === $attribute && $subject instanceof CitizenProject;
+        return in_array($attribute, CitizenProjectPermissions::COMMENTS, true)
+            && $citizenProject instanceof CitizenProject
+        ;
     }
 
     /**
@@ -23,10 +25,6 @@ class AdministrateCitizenProjectVoter extends AbstractAdherentVoter
      */
     protected function doVoteOnAttribute(string $attribute, Adherent $adherent, $citizenProject): bool
     {
-        if (!$citizenProject->isApproved()) {
-            return $citizenProject->isCreatedBy($adherent->getUuid());
-        }
-
-        return $adherent->isAdministratorOf($citizenProject);
+        return (bool) $adherent->getCitizenProjectMembershipFor($citizenProject);
     }
 }

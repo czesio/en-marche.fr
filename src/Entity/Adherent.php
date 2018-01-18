@@ -19,6 +19,7 @@ use AppBundle\ValueObject\Genders;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\ORM\PersistentCollection;
 use Gedmo\Mapping\Annotation as Gedmo;
 use libphonenumber\PhoneNumber;
 use Ramsey\Uuid\Uuid;
@@ -42,10 +43,11 @@ class Adherent implements UserInterface, GeoPointInterface, EncoderAwareInterfac
     const DISABLED_CITIZEN_PROJECT_EMAIL = -1;
     const CITIZEN_PROJECT_EMAIL_DEFAULT_DISTANCE = 10;
 
-    use EntityIdentityTrait;
     use EntityCrudTrait;
-    use EntityPostAddressTrait;
+    use EntityIdentityTrait;
     use EntityPersonNameTrait;
+    use EntityPostAddressTrait;
+    use LazyCollectionTrait;
 
     /**
      * @ORM\Column(nullable=true)
@@ -289,7 +291,7 @@ class Adherent implements UserInterface, GeoPointInterface, EncoderAwareInterfac
         }
 
         if ($this->isAdministrator()) {
-            $roles[] = 'ROLE_ADMINISTRATOR';
+            $roles[] = 'ROLE_PROJECT_ADMINISTRATOR';
         }
 
         return $roles;
@@ -796,28 +798,16 @@ class Adherent implements UserInterface, GeoPointInterface, EncoderAwareInterfac
 
     final public function getMemberships(): CommitteeMembershipCollection
     {
-        if ($this->memberships instanceof Collection) {
-            if (!$this->memberships instanceof CommitteeMembershipCollection) {
-                $this->memberships = new CommitteeMembershipCollection($this->memberships->toArray());
-            }
-        } else {
-            $this->memberships = new CommitteeMembershipCollection((array) $this->memberships);
+        if (!$this->memberships instanceof CommitteeMembershipCollection) {
+            $this->memberships = new CommitteeMembershipCollection($this->memberships->toArray());
         }
 
         return $this->memberships;
     }
 
-    final public function getCitizenProjectMemberships(): CitizenProjectMembershipCollection
+    public function hasLoadedMemberships(): bool
     {
-        if ($this->citizenProjectMemberships instanceof Collection) {
-            if (!$this->citizenProjectMemberships instanceof CitizenProjectMembershipCollection) {
-                $this->citizenProjectMemberships = new CitizenProjectMembershipCollection($this->citizenProjectMemberships->toArray());
-            }
-        } else {
-            $this->citizenProjectMemberships = new CitizenProjectMembershipCollection($this->citizenProjectMemberships);
-        }
-
-        return $this->citizenProjectMemberships;
+        return $this->isCollectionLoaded($this->memberships);
     }
 
     public function getMembershipFor(Committee $committee): ?CommitteeMembership
@@ -829,6 +819,20 @@ class Adherent implements UserInterface, GeoPointInterface, EncoderAwareInterfac
         }
 
         return null;
+    }
+
+    final public function getCitizenProjectMemberships(): CitizenProjectMembershipCollection
+    {
+        if (!$this->citizenProjectMemberships instanceof CitizenProjectMembershipCollection) {
+            $this->citizenProjectMemberships = new CitizenProjectMembershipCollection($this->citizenProjectMemberships->toArray());
+        }
+
+        return $this->citizenProjectMemberships;
+    }
+
+    public function hasLoadedCitizenProjectMemberships(): bool
+    {
+        return $this->isCollectionLoaded($this->citizenProjectMemberships);
     }
 
     public function getCitizenProjectMembershipFor(CitizenProject $citizenProject): ?CitizenProjectMembership

@@ -58,9 +58,24 @@
                         {% if citizen_project.isApproved %}
                             <div class="l__row l__mobile--col">
                                 {% if not user_is_adherent %}
-                                    <a href="{{ path('app_adherent_login') }}" class="newbtn newbtn--orange b__nudge--right-large">
-                                        Rejoindre ce projet
-                                    </a>
+                                    <div class="b__nudge--right-large committee-follow--anonymous">
+                                        <button role="button"
+                                                class="newbtn newbtn--orange committee-follow--disabled btn--no-wrap"
+                                                style="max-width: 175px;"
+                                                disabled="disabled">
+                                            Rejoindre ce projet
+                                        </button>
+                                        <div class="committee-follow--anonymous__link text--white">
+                                            <a href="{{ path('app_adherent_login') }}" id="committee-login-link" class="link--white">
+                                                Connectez-vous
+                                            </a>
+                                            ou
+                                            <a href="{{ path('app_membership_register') }}" id="committee-register-link" class="link--white">
+                                                adhérez
+                                            </a>
+                                            pour rejoindre ce projet
+                                        </div>
+                                    </div>
                                 {% elseif can_follow_citizen_project(citizen_project) %}
                                     <button type="button"
                                             id="citizen_project-toggle-membership"

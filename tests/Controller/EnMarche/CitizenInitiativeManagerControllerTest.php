@@ -53,7 +53,6 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
 
     public function provideOrganizerProtectedPages()
     {
-        $uuid = LoadCitizenInitiativeData::CITIZEN_INITIATIVE_5_UUID;
         $slug = date('Y-m-d', strtotime('+11 days')).'-nettoyage-de-la-kilchberg';
 
         return [
@@ -65,7 +64,6 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
 
     public function provideCancelledInaccessiblePages()
     {
-        $uuid = LoadCitizenInitiativeData::CITIZEN_INITIATIVE_6_UUID;
         $slug = date('Y-m-d', strtotime('+20 days')).'-initiative-citoyenne-annulee';
 
         return [
@@ -271,7 +269,7 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
 
         $crawler = $this->client->followRedirect();
 
-        $this->seeMessageSuccesfullyCreatedFlash($crawler, 'Félicitations, votre message a bien été envoyé aux inscrits sélectionnés.');
+        $this->seeMessageSuccessfullyCreatedFlash($crawler, 'Félicitations, votre message a bien été envoyé aux inscrits sélectionnés.');
 
         // Email should have been sent
         $this->assertCount(1, $this->getEmailRepository()->findMessages(EventContactMembersMessage::class));
@@ -297,7 +295,7 @@ class CitizenInitiativeManagerControllerTest extends MysqlWebTestCase
         $this->assertClientIsRedirectedTo($membersUrl, $this->client);
     }
 
-    private function seeMessageSuccesfullyCreatedFlash(Crawler $crawler, ?string $message = null)
+    private function seeMessageSuccessfullyCreatedFlash(Crawler $crawler, ?string $message = null)
     {
         $flash = $crawler->filter('#notice-flashes');
 

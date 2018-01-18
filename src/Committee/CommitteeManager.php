@@ -212,8 +212,8 @@ class CommitteeManager
     {
         // Optimization to prevent a SQL query if the current adherent already
         // has a loaded list of related committee memberships entities.
-        if ($membership = $adherent->getMembershipFor($committee)) {
-            return $membership;
+        if ($adherent->hasLoadedMemberships()) {
+            return $adherent->getMembershipFor($committee);
         }
 
         return $this->getMembershipRepository()->findMembership($adherent, $committee->getUuid());

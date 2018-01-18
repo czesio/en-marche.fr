@@ -2,6 +2,7 @@
 
 namespace AppBundle\Controller\EnMarche;
 
+use AppBundle\Event\AnonymousRegistrationSession;
 use AppBundle\Event\EventInvitation;
 use AppBundle\Event\EventRegistrationCommand;
 use AppBundle\Entity\Event;
@@ -61,11 +62,16 @@ class EventController extends Controller
             throw $this->createNotFoundException(sprintf('Event "%s" is finished and does not accept registrations anymore', $event->getUuid()));
         }
 
-        $committee = $event->getCommittee();
+        if ($this->isGranted('IS_AUTHENTICATED_ANONYMOUSLY')) {
+            if ($authenticate = $this->get(AnonymousRegistrationSession::class)->start($request)) {
+                return $authenticate;
+            }
+        }
 
         $command = new EventRegistrationCommand($event, $this->getUser());
-        $form = $this->createForm(EventRegistrationType::class, $command);
-        $form->handleRequest($request);
+        $form = $this->createForm(EventRegistrationType::class, $command)
+            ->handleRequest($request)
+        ;
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->get('app.event.registration_handler')->handle($command);
@@ -79,7 +85,7 @@ class EventController extends Controller
 
         return $this->render('events/attend.html.twig', [
             'committee_event' => $event,
-            'committee' => $committee,
+            'committee' => $event->getCommittee(),
             'form' => $form->createView(),
         ]);
     }

@@ -14,16 +14,12 @@ use AppBundle\Repository\EventRegistrationRepository;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Tests\AppBundle\Controller\ControllerTestTrait;
-use Tests\AppBundle\MysqlWebTestCase;
 
 /**
  * @group functional
  */
-class EventControllerTest extends MysqlWebTestCase
+class EventControllerTest extends AbstractEventControllerTest
 {
-    use ControllerTestTrait;
-
     /** @var EventRegistrationRepository */
     private $repository;
 
@@ -404,5 +400,10 @@ class EventControllerTest extends MysqlWebTestCase
         $this->repository = null;
 
         parent::tearDown();
+    }
+
+    protected function getEventUrl(): string
+    {
+        return '/evenements/'.date('Y-m-d', strtotime('+3 days')).'-reunion-de-reflexion-parisienne';
     }
 }

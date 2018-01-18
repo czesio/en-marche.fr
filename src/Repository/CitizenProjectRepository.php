@@ -32,10 +32,17 @@ class CitizenProjectRepository extends BaseGroupRepository
         ;
     }
 
-    public function findCitizenProjects(array $uuids, int $statusFilter = self::ONLY_APPROVED, int $limit = 0): ArrayCollection
+    /**
+     * @param array $uuids
+     * @param int   $statusFilter
+     * @param int   $limit
+     *
+     * @return CitizenProject[]
+     */
+    public function findCitizenProjects(array $uuids, int $statusFilter = self::ONLY_APPROVED, int $limit = 0): array
     {
         if (!$uuids) {
-            return new ArrayCollection();
+            return [];
         }
 
         $statuses[] = BaseGroup::APPROVED;
@@ -43,19 +50,33 @@ class CitizenProjectRepository extends BaseGroupRepository
             $statuses[] = BaseGroup::PENDING;
         }
 
-        $qb = $this->createQueryBuilder('c');
-
+        $qb = $this->createQueryBuilder('p');
         $qb
-            ->where($qb->expr()->in('c.uuid', $uuids))
-            ->andWhere($qb->expr()->in('c.status', $statuses))
-            ->orderBy('c.membersCounts', 'DESC')
+            ->where('p.uuid = :uuids')
+            ->orderBy('p.membersCounts', 'DESC')
         ;
 
         if ($limit >= 1) {
             $qb->setMaxResults($limit);
         }
 
-        return new ArrayCollection($qb->getQuery()->getResult());
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @param Adherent $adherent
+     * @param bool     $onlyAdministrated
+     *
+     * @return CitizenProject[]
+     */
+    public function findAllRegisteredCitizenProjectsForAdherent(Adherent $adherent, bool $onlyAdministrated = false): array
+    {
+        $memberships = $adherent->getCitizenProjectMemberships();
+
+        return $this->findCitizenProjects(
+            $memberships->getCitizenProjectUuids(),
+            self::INCLUDE_UNAPPROVED
+        );
     }
 
     public function findOneApprovedBySlug(string $slug): ?CitizenProject

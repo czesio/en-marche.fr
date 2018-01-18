@@ -1,13 +1,13 @@
 <?php
 
-namespace AppBundle\Security\Voter\Event;
+namespace AppBundle\Security\Voter;
 
 use AppBundle\Entity\Adherent;
 use AppBundle\Entity\Event;
 use AppBundle\Event\EventPermissions;
 use AppBundle\Repository\CommitteeMembershipRepository;
 
-class HostEventVoter extends AbstractEventVoter
+class HostEventVoter extends AbstractAdherentVoter
 {
     private $repository;
 
@@ -21,7 +21,14 @@ class HostEventVoter extends AbstractEventVoter
         return EventPermissions::HOST === $attribute && $event instanceof Event;
     }
 
-    protected function doVoteOnAttribute(string $attribute, Adherent $adherent, Event $event): bool
+    /**
+     * @param string   $attribute
+     * @param Adherent $adherent
+     * @param Event    $event
+     *
+     * @return bool
+     */
+    protected function doVoteOnAttribute(string $attribute, Adherent $adherent, $event): bool
     {
         if ($event->getOrganizer() && $adherent->equals($event->getOrganizer())) {
             return true;
@@ -33,8 +40,8 @@ class HostEventVoter extends AbstractEventVoter
 
         // Optimization to prevent a SQL query if the current adherent already
         // has a loaded list of related committee memberships entities.
-        if ($membership = $adherent->getMembershipFor($committee)) {
-            return $membership->canHostCommittee();
+        if ($adherent->hasLoadedMemberships()) {
+            return $adherent->isHostOf($committee);
         }
 
         return $this->repository->hostCommittee($adherent, $committee->getUuid());

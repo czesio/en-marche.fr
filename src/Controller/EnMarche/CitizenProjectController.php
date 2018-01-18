@@ -6,14 +6,17 @@ use AppBundle\CitizenProject\CitizenProjectCommentCommand;
 use AppBundle\CitizenProject\CitizenProjectCommentCreationCommandHandler;
 use AppBundle\CitizenProject\CitizenProjectManager;
 use AppBundle\CitizenProject\CitizenProjectPermissions;
+use AppBundle\Entity\CitizenAction;
 use AppBundle\Entity\CitizenProject;
 use AppBundle\Entity\CitizenProjectCategory;
 use AppBundle\Entity\CitizenProjectCategorySkill;
 use AppBundle\Entity\Committee;
+use AppBundle\Event\AnonymousRegistrationSession;
 use AppBundle\Exception\CitizenProjectCommitteeSupportAlreadySupportException;
 use AppBundle\Exception\CitizenProjectNotApprovedException;
 use AppBundle\Form\CitizenProjectCommentCommandType;
 use AppBundle\Geocoder\Exception\GeocodingException;
+use AppBundle\Repository\CitizenProjectRepository;
 use AppBundle\Search\SearchParametersFilter;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -52,8 +55,12 @@ class CitizenProjectController extends Controller
      * @Method("GET")
      * @Security("is_granted('SHOW_CITIZEN_PROJECT', citizenProject)")
      */
-    public function showAction(CitizenProject $citizenProject, CitizenProjectManager $citizenProjectManager): Response
+    public function showAction(Request $request, CitizenProject $citizenProject, CitizenProjectManager $citizenProjectManager): Response
     {
+        if ($authenticate = $this->get(AnonymousRegistrationSession::class)->start($request)) {
+            return $authenticate;
+        }
+
         return $this->render('citizen_project/show.html.twig', [
             'citizen_project' => $citizenProject,
             'citizen_actions' => $citizenProjectManager->getCitizenProjectNextActions($citizenProject),
@@ -86,9 +93,11 @@ class CitizenProjectController extends Controller
             }
         }
 
+        $actionRepository = $this->getDoctrine()->getRepository(CitizenAction::class);
+
         return $this->render('citizen_project/show_comments.html.twig', [
             'citizen_project' => $citizenProject,
-            'citizen_actions' => $citizenProjectManager->getCitizenProjectNextActions($citizenProject),
+            'citizen_actions' => $actionRepository->findNextCitizenActionsForCitizenProject($citizenProject),
             'form_committee_support' => $this->createForm(FormType::class)->createView(),
             'administrators' => $citizenProjectManager->getCitizenProjectAdministrators($citizenProject),
             'followers' => $citizenProjectManager->getCitizenProjectFollowers($citizenProject),
@@ -269,10 +278,10 @@ class CitizenProjectController extends Controller
      * @Route("", name="app_citizen_project_landing")
      * @Method("GET")
      */
-    public function landingAction(CitizenProjectManager $citizenProjectManager): Response
+    public function landingAction(CitizenProjectRepository $citizenProjectRepository): Response
     {
         $city = $this->getUser() ? $this->getUser()->getCityName() : SearchParametersFilter::DEFAULT_CITY;
-        $citizenProjects = $this->getUser() ? $citizenProjectManager->getAdherentCitizenProjectsAdministrator($this->getUser()) : [];
+        $citizenProjects = $this->getUser() ? $citizenProjectRepository->findAllRegisteredCitizenProjectsForAdherent($this->getUser(), true) : [];
 
         return $this->render('citizen_project/landing.html.twig', [
             'citizen_project' => $citizenProjects[0] ?? null,
@@ -290,7 +299,7 @@ class CitizenProjectController extends Controller
         $search->setCity($request->query->get('city'));
 
         try {
-            $results = $citizenProjectManager->findNearCitizenProjectByCoordinates($search->getCityCoordinates());
+            $results = $citizenProjectManager->getNearCitizenProjectByCoordinates($search->getCityCoordinates());
             $citizenProjectManager->injectCitizenProjectCreator($results);
 
             $response = $this->render('citizen_project/_landing_results.html.twig', [
