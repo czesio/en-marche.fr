@@ -13,6 +13,7 @@ use Twig\Environment;
 class CitizenProjectBroadcaster
 {
     private const CITIZEN_PROJECTS_SUMMARY_LIMIT = 15;
+
     private $citizenProjectRepository;
     private $mailer;
     private $twig;
@@ -45,8 +46,6 @@ class CitizenProjectBroadcaster
 
         $message = $this->createMessage($citizenProjects, $adherent);
         $this->mailer->sendMessage($message);
-
-        $this->citizenProjectRepository->clear();
     }
 
     private function createMessage(array $citizenProjects, Adherent $adherent): Message

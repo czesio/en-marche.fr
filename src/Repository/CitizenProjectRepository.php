@@ -197,9 +197,4 @@ class CitizenProjectRepository extends BaseGroupRepository
             ->getResult()
         ;
     }
-
-    public function clear(): void
-    {
-        $this->_em->clear($this->_entityName);
-    }
 }

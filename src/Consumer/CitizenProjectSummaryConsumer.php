@@ -43,6 +43,7 @@ class CitizenProjectSummaryConsumer extends AbstractConsumer
             }
 
             $this->broadcaster->broadcast($adherent, $data['approved_since']);
+            $this->manager->clear();
 
             return self::MSG_ACK;
         } catch (\Exception $e) {
